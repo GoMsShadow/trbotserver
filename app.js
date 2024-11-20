@@ -25,7 +25,7 @@ var g_takeProfit = 0;
 var g_symbol = "BTCUSDC";
 var g_volume = 0.001;
 
-app.post("/api/trade", async (req, res) => {
+app.post("/trade", async (req, res) => {
   const { side } = req.body;
   console.log(side, g_expectedBuy, g_takeProfit, g_stopLoss);
   console.log(
@@ -115,7 +115,7 @@ app.post("/api/trade", async (req, res) => {
   }
 });
 
-app.post("/api/setparams", async (req, res) => {
+app.post("/setparams", async (req, res) => {
   const { symbol, volume, expectedBuy, stopLoss, takeProfit } = req.body;
 
   await sql`UPDATE params SET symbol = ${symbol}, volume = ${volume}, stopLoss = ${stopLoss}, takeProfit = ${takeProfit}, expectedBuy = ${expectedBuy}, active = ${
@@ -130,7 +130,7 @@ app.post("/api/setparams", async (req, res) => {
   res.status(200).json({ success: 1, status: appStatus });
 });
 
-app.get("/api/getparams", async (req, res) => {
+app.get("/getparams", async (req, res) => {
   const { rows } = await sql`SELECT * FROM params LIMIT 1;`;
   appStatus = rows[0].active;
   g_symbol = rows[0].symbol;
@@ -148,7 +148,7 @@ app.get("/api/getparams", async (req, res) => {
   });
 });
 
-app.get("/api/loadOpenOrders", async (req, res) => {
+app.get("/loadOpenOrders", async (req, res) => {
   try {
     // Get server time
     const serverTimeResponse = await client.time();
@@ -178,7 +178,7 @@ app.get("/api/loadOpenOrders", async (req, res) => {
   }
 });
 
-app.get("/api/loadAllOrders", async (req, res) => {
+app.get("/loadAllOrders", async (req, res) => {
   try {
     // Get server time
     const serverTimeResponse = await client.time();
@@ -208,7 +208,7 @@ app.get("/api/loadAllOrders", async (req, res) => {
   }
 });
 
-app.get("/api/cancelAllOpenOrders", async (req, res) => {
+app.get("/cancelAllOpenOrders", async (req, res) => {
   try {
     const cancelOrders = await client.cancelOpenOrders(g_symbol, {
       recvWindow: 56146,
@@ -221,7 +221,7 @@ app.get("/api/cancelAllOpenOrders", async (req, res) => {
   }
 });
 
-app.post("/api/queryOrder", async (req, res) => {
+app.post("/queryOrder", async (req, res) => {
   try {
     const { symbol, orderId, origClientOrderId } = req.body;
     const options = {
@@ -238,7 +238,7 @@ app.post("/api/queryOrder", async (req, res) => {
   }
 });
 
-app.post("/api/cancelOrder", async (req, res) => {
+app.post("/cancelOrder", async (req, res) => {
   try {
     const { symbol, orderId, origClientOrderId, newClientOrderId } = req.body;
     const options = {
@@ -259,7 +259,7 @@ app.post("/api/cancelOrder", async (req, res) => {
 });
 
 // GET all symbols
-app.get("/api/symbol", async (req, res) => {
+app.get("/symbol", async (req, res) => {
   try {
     const { rows: symbols } = await sql`SELECT * FROM symbols`;
     res.json({ success: true, symbols });
@@ -269,7 +269,7 @@ app.get("/api/symbol", async (req, res) => {
   }
 });
 
-app.post("/api/symbol", async (req, res) => {
+app.post("/symbol", async (req, res) => {
   const { name } = req.body;
   try {
     const { rows: existingSymbols } =
@@ -290,7 +290,7 @@ app.post("/api/symbol", async (req, res) => {
   }
 });
 
-app.put("/api/symbol/:id", async (req, res) => {
+app.put("/symbol/:id", async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
 
@@ -318,7 +318,7 @@ app.put("/api/symbol/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/symbol/:id", async (req, res) => {
+app.delete("/symbol/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const { rowCount } = await sql`DELETE FROM symbols WHERE id = ${id}`;
@@ -335,7 +335,7 @@ app.delete("/api/symbol/:id", async (req, res) => {
   }
 });
 
-app.get("/api/symbol-table", async (req, res) => {
+app.get("/symbol-table", async (req, res) => {
   try {
     await sql`CREATE TABLE IF NOT EXISTS symbols (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL)`;
     console.log("Table 'symbols' created successfully.");
