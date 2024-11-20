@@ -5,6 +5,7 @@ const Mexc = require("mexc-api-sdk");
 const { sql } = require("@vercel/postgres");
 const dotenv = require("dotenv");
 dotenv.config();
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,10 +24,6 @@ var g_stopLoss = 0;
 var g_takeProfit = 0;
 var g_symbol = "BTCUSDC";
 var g_volume = 0.001;
-
-app.get("/", (req, res) => {
-  res.send("Trading Bot Server is running...");
-});
 
 app.post("/api/trade", async (req, res) => {
   const { side } = req.body;
@@ -345,6 +342,10 @@ app.get("/api/symbol-table", async (req, res) => {
   } catch (error) {
     console.error("Error creating table: ", error);
   }
+});
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.listen(PORT, () => {
