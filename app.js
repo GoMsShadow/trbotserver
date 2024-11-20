@@ -281,9 +281,7 @@ app.post("/symbol", async (req, res) => {
     }
 
     await sql`INSERT INTO symbols (name) VALUES (${name})`;
-    res
-      .status(201)
-      .json({ success: true, message: "Symbol created successfully" });
+    res.json({ success: true, message: "Symbol created successfully" });
   } catch (error) {
     console.error("Error creating symbol:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -335,12 +333,32 @@ app.delete("/symbol/:id", async (req, res) => {
   }
 });
 
-app.get("/symbol-table", async (req, res) => {
+app.get("/search", async (req, res) => {
+  const { rows: searches } =
+    await sql`SELECT * FROM searches ORDER BY count ASC`;
+  res.json({ success: true, searches });
+});
+
+app.post("/search", async (req, res) => {
+  const { symbol } = req.body;
+
+  if (!symbol) {
+    return res.status(400).json({ error: "Symbol is required" });
+  }
+
   try {
-    await sql`CREATE TABLE IF NOT EXISTS symbols (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL)`;
-    console.log("Table 'symbols' created successfully.");
+    const { rows } = await sql`SELECT * FROM searches WHERE symbol = ${symbol}`;
+
+    if (rows.length > 0) {
+      await sql`UPDATE searches SET count = count + 1 WHERE symbol = ${symbol}`;
+      res.json({ success: true, count: rows[0].count + 1 });
+    } else {
+      await sql`INSERT INTO searches (symbol, count) VALUES (${symbol}, 1)`;
+      res.json({ success: true, count: 1 });
+    }
   } catch (error) {
-    console.error("Error creating table: ", error);
+    console.error("Error updating search:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
