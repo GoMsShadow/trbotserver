@@ -13,17 +13,20 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const client = new Mexc.Spot(
-  process.env.MEXC_API_KEY,
-  process.env.MEXC_API_SECRET
-);
-
 var appStatus = 1;
 var g_expectedBuy = 0;
 var g_stopLoss = 0;
 var g_takeProfit = 0;
+var g_apiKey = ""; 
+var g_apiSecret = ""; 
 var g_symbol = "BTCUSDC";
 var g_volume = 0.001;
+
+const getMexcClient = (key, secret) => {
+  const apiKey = key ?? process.env.MEXC_API_KEY;
+  const apiSecret = secret ?? process.env.MEXC_API_SECRET;
+  return new Mexc.Spot(apiKey, apiSecret);
+};
 
 app.post("/trade", async (req, res) => {
   const { side } = req.body;
@@ -33,6 +36,7 @@ app.post("/trade", async (req, res) => {
       parseFloat(g_stopLoss) == 0 &&
       parseFloat(g_takeProfit) == 0
   );
+  const client = getMexcClient(g_apiKey, g_apiSecret);
   if (appStatus) {
     if (
       parseFloat(g_expectedBuy) == 0 &&
@@ -116,14 +120,16 @@ app.post("/trade", async (req, res) => {
 });
 
 app.post("/setparams", async (req, res) => {
-  const { symbol, volume, expectedBuy, stopLoss, takeProfit } = req.body;
+  const { symbol, volume, apiKey, apiSecret, expectedBuy, stopLoss, takeProfit } = req.body;
 
-  await sql`UPDATE params SET symbol = ${symbol}, volume = ${volume}, stopLoss = ${stopLoss}, takeProfit = ${takeProfit}, expectedBuy = ${expectedBuy}, active = ${
+  await sql`UPDATE params SET symbol = ${symbol}, volume = ${volume}, apiKey = ${apiKey}, apiSecret = ${apiSecret}, stopLoss = ${stopLoss}, takeProfit = ${takeProfit}, expectedBuy = ${expectedBuy}, active = ${
     appStatus == 0 ? 1 : 0
   } WHERE id = 0;`;
   appStatus = appStatus == 0 ? 1 : 0;
   g_symbol = symbol;
   g_volume = volume;
+  g_apiKey = apiKey;
+  g_apiSecret = apiSecret;
   g_expectedBuy = expectedBuy;
   g_stopLoss = stopLoss;
   g_takeProfit = takeProfit;
@@ -135,12 +141,16 @@ app.get("/getparams", async (req, res) => {
   appStatus = rows[0].active;
   g_symbol = rows[0].symbol;
   g_volume = rows[0].volume;
+  g_apiKey = rows[0].apiKey;
+  g_apiSecret = rows[0].apiSecret;
   g_expectedBuy = rows[0].expectedbuy;
   g_stopLoss = rows[0].stoploss;
   g_takeProfit = rows[0].takeprofit;
   res.json({
     active: rows[0].active,
     volume: rows[0].volume,
+    apiKey: rows[0].apikey,
+    apiSecret: rows[0].apisecret,
     symbol: rows[0].symbol,
     expectedBuy: rows[0].expectedbuy,
     stopLoss: rows[0].stoploss,
@@ -150,6 +160,7 @@ app.get("/getparams", async (req, res) => {
 
 app.get("/loadOpenOrders", async (req, res) => {
   try {
+    const client = getMexcClient(g_apiKey, g_apiSecret);
     // Get server time
     const serverTimeResponse = await client.time();
     const serverTime = serverTimeResponse.serverTime; // Server time in milliseconds
@@ -180,6 +191,7 @@ app.get("/loadOpenOrders", async (req, res) => {
 
 app.get("/loadAllOrders", async (req, res) => {
   try {
+    const client = getMexcClient(g_apiKey, g_apiSecret);
     // Get server time
     const serverTimeResponse = await client.time();
     const serverTime = serverTimeResponse.serverTime; // Server time in milliseconds
@@ -210,6 +222,7 @@ app.get("/loadAllOrders", async (req, res) => {
 
 app.get("/cancelAllOpenOrders", async (req, res) => {
   try {
+    const client = getMexcClient(g_apiKey, g_apiSecret);
     const cancelOrders = await client.cancelOpenOrders(g_symbol, {
       recvWindow: 56146,
     });
@@ -224,6 +237,7 @@ app.get("/cancelAllOpenOrders", async (req, res) => {
 app.post("/queryOrder", async (req, res) => {
   try {
     const { symbol, orderId, origClientOrderId } = req.body;
+    const client = getMexcClient(g_apiKey, g_apiSecret);
     const options = {
       ...(orderId && { orderId }),
       ...(origClientOrderId && { origClientOrderId }),
@@ -241,6 +255,7 @@ app.post("/queryOrder", async (req, res) => {
 app.post("/cancelOrder", async (req, res) => {
   try {
     const { symbol, orderId, origClientOrderId, newClientOrderId } = req.body;
+    const client = getMexcClient(g_apiKey, g_apiSecret);
     const options = {
       ...(orderId && { orderId }),
       ...(origClientOrderId && { origClientOrderId }),
